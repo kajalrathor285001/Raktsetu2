@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{% if view_role == 'hospital' %}Hospital workspace{% else %}Patient requests{% endif %}{% endblock %}
+{% block content %}
+<div class="page-title">
+  <span class="eyebrow">{% if view_role == 'hospital' %}HOSPITAL WORKSPACE{% else %}PATIENT WORKSPACE{% endif %}</span>
+  <h1>{% if view_role == 'hospital' %}Manage blood <em>requests.</em>{% else %}Your blood <em>requests.</em>{% endif %}</h1>
+  {% if view_role == 'patient' %}<a class="btn" href="{{ url_for('new_request') }}">+ New blood request</a>{% else %}<p>All active requests are listed here. Any registered hospital can verify a pending request.</p>{% endif %}
+</div>
+{% if requests %}
+<div class="panel table-wrap">
+<table>
+  <tr><th>Patient</th><th>Group</th><th>Units</th><th>City</th><th>Hospital</th><th>Status</th><th>Action</th></tr>
+  {% for r in requests %}
+  <tr>
+    <td>{{ r.patient_name }}</td><td>{{ r.blood_group }}</td><td>{{ r.units }}</td><td>{{ r.city }}</td><td>{{ r.hospital }}</td>
+    <td><span class="pill {{ r.status }}">{{ r.status|replace('_',' ')|title }}</span></td>
+    <td class="actions-cell">
+      {% if view_role == 'hospital' and r.status == 'pending' %}
+        <form method="post" action="{{ url_for('verify_request',request_id=r.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn small">Verify</button></form>
+      {% elif view_role == 'hospital' and r.status == 'verified' %}
+        <form method="post" action="{{ url_for('progress_request',request_id=r.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn small">Start progress</button></form>
+      {% elif view_role == 'hospital' and r.status == 'in_progress' %}
+        <form method="post" action="{{ url_for('complete_request',request_id=r.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn small">Mark completed</button></form>
+      {% endif %}
+      {% if view_role == 'patient' and r.status in ('pending','verified') %}
+        <form method="post" action="{{ url_for('cancel_request',request_id=r.id) }}" onsubmit="return confirm('Cancel this blood request?')"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="linkbtn">Cancel</button></form>
+      {% endif %}
+      {% if view_role == 'patient' and r.status in ('completed','cancelled','closed') %}
+        <form method="post" action="{{ url_for('delete_request',request_id=r.id) }}" onsubmit="return confirm('Archive this request from your dashboard?')"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="linkbtn">Archive</button></form>
+      {% endif %}
+      {% if view_role == 'patient' and r.status not in ('completed','cancelled','closed') %}<span class="muted">Awaiting update</span>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% else %}<div class="empty">{% if view_role == 'hospital' %}No active blood requests are waiting for hospital action.{% else %}No requests yet. Create your first request.{% endif %}</div>{% endif %}
+{% endblock %}

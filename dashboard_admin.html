@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block title %}Admin dashboard{% endblock %}{% block content %}
+<div class="page-title"><span class="eyebrow">ADMINISTRATION</span><h1>Platform <em>overview.</em></h1></div>
+<div class="panel table-wrap"><h2>All blood requests</h2><table>
+<tr><th>Patient</th><th>Group</th><th>City</th><th>Created by</th><th>Status</th><th>Action</th></tr>
+{% for r in requests %}<tr><td>{{ r.patient_name }}</td><td>{{ r.blood_group }}</td><td>{{ r.city }}</td><td>{{ r.creator }}</td><td><span class="pill {{ r.status }}">{{ r.status|replace('_',' ')|title }}</span></td><td>
+{% if r.status=='pending' %}<form method="post" action="{{ url_for('verify_request',request_id=r.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn small">Verify</button></form>
+{% elif r.status=='verified' %}<form method="post" action="{{ url_for('progress_request',request_id=r.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn small">Start progress</button></form>
+{% elif r.status=='in_progress' %}<form method="post" action="{{ url_for('complete_request',request_id=r.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn small">Complete</button></form>{% endif %}
+</td></tr>{% endfor %}</table></div>
+<div class="panel table-wrap spaced"><h2>Recent request activity</h2><table><tr><th>Time</th><th>Request</th><th>Action</th><th>Updated by</th><th>Status change</th></tr>{% for a in activity %}<tr><td>{{ a.created_at }}</td><td>{{ a.patient_name }}</td><td>{{ a.action|replace('_',' ')|title }}</td><td>{{ a.actor_name }}</td><td>{{ a.old_status or '—' }} → {{ a.new_status or '—' }}</td></tr>{% else %}<tr><td colspan="5">No activity recorded yet.</td></tr>{% endfor %}</table></div>
+{% endblock %}
